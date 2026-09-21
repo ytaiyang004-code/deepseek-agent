@@ -196,120 +196,134 @@ def get_current_time():
     return now.strftime("%Y-%m-%d %H:%M:%S")
 
 # ==========================
-# 给 DeepSeek 看的工具说明
+# 工具定义（唯一数据源）
+# 每个工具把“给模型看的说明”和“真正执行的 Python 函数”放在一起，
+# tools 和 tool_registry 都由这里派生，新增工具只需要改这一个列表。
 # ==========================
 
-tools = [
+TOOL_SPECS = [
     {
-        "type": "function",
-        "function": {
-            "name": "math_calculator",
-            "description": "计算数学表达式，支持加减乘除、幂、pi、sqrt、sin、cos等数学运算。",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "expression": {
-                        "type": "string",
-                        "description": "要计算的数学表达式，例如：2 * pi * 36.8 + 2 * 84.39"
-                    }
-                },
-                "required": ["expression"]
-            }
+        "callable": math_calculator,
+        "description": "计算数学表达式，支持加减乘除、幂、pi、sqrt、sin、cos等数学运算。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "expression": {
+                    "type": "string",
+                    "description": "要计算的数学表达式，例如：2 * pi * 36.8 + 2 * 84.39"
+                }
+            },
+            "required": ["expression"]
         }
     },
 
     {
-        "type": "function",
-        "function": {
-            "name": "track_stagger",
-            "description": "计算标准田径跑道不同道次相对于第一道的弯道错位距离。",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "lane": {
-                        "type": "integer",
-                        "description": "跑道道次，例如2表示第二道"
-                    },
-                    "arc_fraction": {
-                        "type": "number",
-                        "description": "需要计算的弯道比例。1.0表示两个半圆合计，0.5表示一个半圆。"
-                    },
-                    "lane_width": {
-                        "type": "number",
-                        "description": "每条跑道宽度，默认1.22米"
-                    },
-                    "curb_radius": {
-                        "type": "number",
-                        "description": "第一道内沿半径，默认36.5米"
-                    }
+        "callable": track_stagger,
+        "description": "计算标准田径跑道不同道次相对于第一道的弯道错位距离。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "lane": {
+                    "type": "integer",
+                    "description": "跑道道次，例如2表示第二道"
                 },
-                "required": ["lane"]
-            }
+                "arc_fraction": {
+                    "type": "number",
+                    "description": "需要计算的弯道比例。1.0表示两个半圆合计，0.5表示一个半圆。"
+                },
+                "lane_width": {
+                    "type": "number",
+                    "description": "每条跑道宽度，默认1.22米"
+                },
+                "curb_radius": {
+                    "type": "number",
+                    "description": "第一道内沿半径，默认36.5米"
+                }
+            },
+            "required": ["lane"]
         }
     },
 
 
     {
-        "type": "function",
-        "function": {
-            "name": "track_stagger_batch",
-            "description": (
-                "批量计算多个标准田径跑道道次相对于第一道的弯道错位距离。"
-                "需要比较多个道次时，优先使用这个工具，"
-                "不要逐个重复调用track_stagger。"
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "lanes": {
-                        "type": "array",
-                        "items": {
-                            "type": "integer"
-                        },
-                        "description": "需要计算的道次，例如 [2, 5, 8]"
+        "callable": track_stagger_batch,
+        "description": (
+            "批量计算多个标准田径跑道道次相对于第一道的弯道错位距离。"
+            "需要比较多个道次时，优先使用这个工具，"
+            "不要逐个重复调用track_stagger。"
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "lanes": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
                     },
-                    "arc_fraction": {
-                        "type": "number",
-                        "description": "1.0表示完整两个半圆，0.5表示一个半圆"
-                    },
-                    "lane_width": {
-                        "type": "number",
-                        "description": "跑道宽度，默认1.22米"
-                    },
-                    "curb_radius": {
-                        "type": "number",
-                        "description": "第一道内沿半径，默认36.5米"
-                    }
+                    "description": "需要计算的道次，例如 [2, 5, 8]"
                 },
-                "required": ["lanes"]
-            }
+                "arc_fraction": {
+                    "type": "number",
+                    "description": "1.0表示完整两个半圆，0.5表示一个半圆"
+                },
+                "lane_width": {
+                    "type": "number",
+                    "description": "跑道宽度，默认1.22米"
+                },
+                "curb_radius": {
+                    "type": "number",
+                    "description": "第一道内沿半径，默认36.5米"
+                }
+            },
+            "required": ["lanes"]
         }
     },
 
 
     {
-        "type": "function",
-        "function": {
-            "name": "get_current_time",
-            "description": "获取当前电脑的本地日期和时间。",
-            "parameters": {
-                "type": "object",
-                "properties": {}
-            }
+        "callable": get_current_time,
+        "description": "获取当前电脑的本地日期和时间。",
+        "parameters": {
+            "type": "object",
+            "properties": {}
         }
     }
 ]
 
-# ==========================
-# Python 工具注册表
-# ==========================
 
-tool_registry = {
-    "math_calculator": math_calculator,
-    "track_stagger_batch": track_stagger_batch,
-    "track_stagger": track_stagger,
-    "get_current_time": get_current_time
-}
+def build_tools(tool_specs):
+    """
+    把工具定义转换成 DeepSeek API 需要的 tools 参数。
+    工具名直接取自 Python 函数名，避免和注册表写得不一样。
+    """
+
+    return [
+        {
+            "type": "function",
+            "function": {
+                "name": spec["callable"].__name__,
+                "description": spec["description"],
+                "parameters": spec["parameters"]
+            }
+        }
+        for spec in tool_specs
+    ]
+
+
+def build_tool_registry(tool_specs):
+    """
+    把工具定义转换成 “工具名 -> Python 函数” 的注册表。
+    """
+
+    return {
+        spec["callable"].__name__: spec["callable"]
+        for spec in tool_specs
+    }
+
+
+tools = build_tools(TOOL_SPECS)
+
+tool_registry = build_tool_registry(TOOL_SPECS)
 
 # ==========================
 # 对话历史
@@ -341,247 +355,306 @@ messages = [
 
 MAX_TOOL_STEPS = 6
 
-print("Agent v2 已启动。")
-print("输入“退出”可以结束程序。\n")
+def main():
 
-while True:
+    # messages 会在历史裁剪时被整体替换，这里沿用模块级的同一份历史
+    global messages
 
-    user_input = input("你：").strip()
-
-    if user_input == "退出":
-        print("Agent：再见！")
-        break
-
-    # 本轮 Token 计数器
-    usage_counter = create_usage_counter()
-
-    # 加入用户消息
-    messages.append(
-        {
-            "role": "user",
-            "content": user_input
-        }
-    )
-
-    # 本轮临时消息
-    working_messages = messages.copy()
-
-    tool_steps = 0
-    tool_call_counter = {}
-
-
-
-    # ==========================
-    # Agent 工具调用循环
-    # ==========================
+    print("Agent v2 已启动。")
+    print("输入“退出”可以结束程序。\n")
 
     while True:
 
-        response = client.chat.completions.create(
-            model="deepseek-flash",
-            messages=working_messages,
-            tools=tools,
-            tool_choice="auto",
-            reasoning_effort="none",
-            max_tokens=1200
-        )
+        user_input = input("你：").strip()
 
-        # 记录本次 API Token
-        add_usage(
-            usage_counter,
-            response
-        )
-
-        assistant_message = (
-            response.choices[0].message
-        )
-
-        # 把模型的决定加入临时历史
-        working_messages.append(
-            assistant_message.model_dump(
-                exclude_none=True
-            )
-        )
-
-
-        # ==========================
-        # 不需要调用工具
-        # ==========================
-
-        if not assistant_message.tool_calls:
-
-            final_answer = (
-                assistant_message.content
-                or ""
-            )
-
-            print(
-                "\nAgent：",
-                final_answer
-            )
-
-            # 长期历史只保存最终回答
-            messages.append(
-                {
-                    "role": "assistant",
-                    "content": final_answer
-                }
-            )
-
+        if user_input == "退出":
+            print("Agent：再见！")
             break
 
+        # 本轮 Token 计数器
+        usage_counter = create_usage_counter()
+
+        # 加入用户消息
+        messages.append(
+            {
+                "role": "user",
+                "content": user_input
+            }
+        )
+
+        # 本轮临时消息
+        working_messages = messages.copy()
+
+        tool_steps = 0
+        tool_call_counter = {}
+
+        api_failed = False
+
+
 
         # ==========================
-        # 防止无限调用工具
+        # Agent 工具调用循环
         # ==========================
 
-        tool_steps += 1
+        while True:
 
-        if tool_steps > MAX_TOOL_STEPS:
+            try:
 
-            print(
-                "\nAgent：工具调用次数过多，"
-                "本轮已自动停止。"
+                response = client.chat.completions.create(
+                    model="deepseek-flash",
+                    messages=working_messages,
+                    tools=tools,
+                    tool_choice="auto",
+                    reasoning_effort="none",
+                    max_tokens=1200
+                )
+
+            except Exception as error:
+
+                # 网络抖动、限流、超时等不应该让整个对话结束
+                print(
+                    "\nAgent：调用 DeepSeek API 失败：",
+                    error
+                )
+
+                print("本次提问已取消，请稍后重新提问。\n")
+
+                api_failed = True
+
+                break
+
+            # 记录本次 API Token
+            add_usage(
+                usage_counter,
+                response
             )
 
-            break
-
-
-        # ==========================
-        # 执行模型要求的工具
-        # ==========================
-
-        for tool_call in assistant_message.tool_calls:
-
-            function_name = (
-                tool_call.function.name
+            assistant_message = (
+                response.choices[0].message
             )
 
-            tool_call_counter[function_name] = (tool_call_counter.get(function_name, 0) + 1)
-
-            arguments = json.loads(
-                tool_call.function.arguments
-            )
-
-            print(
-                "\n[模型决定调用工具]"
-            )
-
-            print(
-                "工具：",
-                function_name
-            )
-
-            print(
-                "参数：",
-                arguments
+            # 把模型的决定加入临时历史
+            working_messages.append(
+                assistant_message.model_dump(
+                    exclude_none=True
+                )
             )
 
 
-            # 查找 Python 中真正的函数
-            if function_name not in tool_registry:
+            # ==========================
+            # 不需要调用工具
+            # ==========================
 
-                result = {
-                    "error":
-                    f"未知工具：{function_name}"
-                }
+            if not assistant_message.tool_calls:
 
-            else:
+                final_answer = (
+                    assistant_message.content
+                    or ""
+                )
+
+                print(
+                    "\nAgent：",
+                    final_answer
+                )
+
+                # 长期历史只保存最终回答
+                messages.append(
+                    {
+                        "role": "assistant",
+                        "content": final_answer
+                    }
+                )
+
+                break
+
+
+            # ==========================
+            # 防止无限调用工具
+            # ==========================
+
+            tool_steps += 1
+
+            if tool_steps > MAX_TOOL_STEPS:
+
+                print(
+                    "\nAgent：工具调用次数过多，"
+                    "本轮已自动停止。"
+                )
+
+                break
+
+
+            # ==========================
+            # 执行模型要求的工具
+            # ==========================
+
+            for tool_call in assistant_message.tool_calls:
+
+                function_name = (
+                    tool_call.function.name
+                )
+
+                tool_call_counter[function_name] = (tool_call_counter.get(function_name, 0) + 1)
+
+                # 解析模型给的参数，非法 JSON 不应该把整个程序带崩
+                arguments = None
+                arguments_error = None
 
                 try:
 
-                    function = tool_registry[
-                        function_name
-                    ]
-
-                    result = function(
-                        **arguments
+                    arguments = json.loads(
+                        tool_call.function.arguments
                     )
 
-                except Exception as error:
+                except (json.JSONDecodeError, TypeError) as error:
 
-                    result = {
-                        "error": str(error)
-                    }
+                    arguments_error = str(error)
 
 
-            print(
-                "Python 工具执行结果：",
-                result
-            )
-
-
-            # 把结果转换成字符串
-            if isinstance(
-                result,
-                (dict, list)
-            ):
-
-                tool_content = json.dumps(
-                    result,
-                    ensure_ascii=False
+                print(
+                    "\n[模型决定调用工具]"
                 )
 
-            else:
+                print(
+                    "工具：",
+                    function_name
+                )
 
-                tool_content = str(result)
+                if arguments_error is None:
+
+                    print(
+                        "参数：",
+                        arguments
+                    )
+
+                else:
+
+                    print(
+                        "参数（原始文本）：",
+                        tool_call.function.arguments
+                    )
 
 
-            # 把工具结果交还 DeepSeek
-            working_messages.append(
-                {
-                    "role": "tool",
-                    "tool_call_id":
-                        tool_call.id,
-                    "content":
-                        tool_content
-                }
-            )
+                # 查找 Python 中真正的函数
+                if arguments_error is not None:
+
+                    result = {
+                        "error":
+                        f"工具参数不是合法 JSON：{arguments_error}"
+                    }
+
+                elif function_name not in tool_registry:
+
+                    result = {
+                        "error":
+                        f"未知工具：{function_name}"
+                    }
+
+                else:
+
+                    try:
+
+                        function = tool_registry[
+                            function_name
+                        ]
+
+                        result = function(
+                            **arguments
+                        )
+
+                    except Exception as error:
+
+                        result = {
+                            "error": str(error)
+                        }
+
+
+                print(
+                    "Python 工具执行结果：",
+                    result
+                )
+
+
+                # 把结果转换成字符串
+                if isinstance(
+                    result,
+                    (dict, list)
+                ):
+
+                    tool_content = json.dumps(
+                        result,
+                        ensure_ascii=False
+                    )
+
+                else:
+
+                    tool_content = str(result)
+
+
+                # 把工具结果交还 DeepSeek
+                working_messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id":
+                            tool_call.id,
+                        "content":
+                            tool_content
+                    }
+                )
+            # ==========================
+        # 本轮统计
         # ==========================
-    # 本轮统计
-    # ==========================
+
+        # API 调用失败时本轮没有有效结果，跳过统计直接进入下一轮
+        if api_failed:
+
+            continue
 
 
-    print("\n========== 本轮工具调用 ==========")
+        print("\n========== 本轮工具调用 ==========")
 
-    if tool_call_counter:
-        total_tool_calls = 0
-        for tool_name, count in tool_call_counter.items():
+        if tool_call_counter:
+            total_tool_calls = 0
+            for tool_name, count in tool_call_counter.items():
 
-            print(
-                f"{tool_name}：{count} 次"
-            )
-            total_tool_calls += count
-        print("工具调用总数：", total_tool_calls)
+                print(
+                    f"{tool_name}：{count} 次"
+                )
+                total_tool_calls += count
+            print("工具调用总数：", total_tool_calls)
 
-    else:
-        print("本轮没有调用工具")
+        else:
+            print("本轮没有调用工具")
 
-    print("================================\n")
+        print("================================\n")
 
-    print_usage(
-        usage_counter
-    )
+        print_usage(
+            usage_counter
+        )
 
-    balance = get_deepseek_balance()
+        balance = get_deepseek_balance()
 
-    print(
-        "DeepSeek余额：",
-        balance
-    )
-
-
-    # ==========================
-    # 控制长期对话历史长度
-    # ==========================
-
-    if len(messages) > 9:
-
-        messages = (
-            [messages[0]]
-            + messages[-8:]
+        print(
+            "DeepSeek余额：",
+            balance
         )
 
 
-print("已注册工具：", list(tool_registry.keys()))
+        # ==========================
+        # 控制长期对话历史长度
+        # ==========================
+
+        if len(messages) > 9:
+
+            messages = (
+                [messages[0]]
+                + messages[-8:]
+            )
+
+
+    print("已注册工具：", list(tool_registry.keys()))
+
+
+if __name__ == "__main__":
+    main()
 
